@@ -4,14 +4,14 @@ from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from google.auth.transport.requests import Request
 from google_auth_oauthlib.flow import InstalledAppFlow
-import openai
+from openai import OpenAI
 from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
 
-# Set up OpenAI API
-openai.api_key = st.secrets["OPENAI_API_KEY"]
+# Set up OpenAI client
+client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
 # Set up Google Cloud credentials
 SCOPES = ['https://www.googleapis.com/auth/blogger']
@@ -45,36 +45,33 @@ def generate_article(title, about, include_images):
     content_prompt = f"Write a detailed blog post with the title '{title}'. Here's what the content should be about: {about}"
     if include_images:
         content_prompt += " Include image suggestions as described in the system instructions."
-
-    response = openai.ChatCompletion.create(
-        model="gpt-4o-mini",
+    
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",  
         messages=[
             {"role": "system", "content": SYSTEM_INSTRUCTION},
             {"role": "user", "content": content_prompt}
         ]
     )
-    return response.choices[0].message['content']
+    return response.choices[0].message.content
 
 def upload_to_blogger(title, content):
     creds = get_google_credentials()
     service = build('blogger', 'v3', credentials=creds)
-
     posts = service.posts()
     body = {
         "kind": "blogger#post",
         "title": title,
         "content": content
     }
-
     posts.insert(blogId=BLOG_ID, body=body).execute()
 
 def main():
     st.title("Blog Post Generator and Uploader")
-
     title = st.text_input("Enter the blog post title:")
     about = st.text_area("Enter what the content should be about:")
     include_images = st.checkbox("Include image suggestions")
-
+    
     if st.button("Generate Article"):
         if title and about:
             with st.spinner("Generating article..."):
@@ -82,7 +79,7 @@ def main():
             
             st.subheader("Generated Article:")
             st.markdown(article_content)
-
+            
             if st.button("Upload to Blog"):
                 with st.spinner("Uploading to Blogger..."):
                     upload_to_blogger(title, article_content)
