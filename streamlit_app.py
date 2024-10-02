@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Set up OpenAI API
-openai.api_key = st.secrets('OPENAI_API_KEY')
+openai.api_key = st.secrets["OPENAI_API_KEY"]
 
 # Set up Google Cloud credentials
 SCOPES = ['https://www.googleapis.com/auth/blogger']
